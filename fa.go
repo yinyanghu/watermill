@@ -8,10 +8,6 @@ type FiniteAutomata interface {
 	AcceptString(str string) (bool, error)
 }
 
-const (
-	TypeDFA = "DFA"
-	TypeNFA = "NFA"
-	TypeEpsilonNFA = "EpsilonNFA"
-)
+
 
 

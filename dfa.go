@@ -1,5 +1,7 @@
 package watermill
 
+import "fmt"
+
 type DeterministicFiniteAutomata struct {
 	name         string
 	g            TransitionGraph
@@ -11,8 +13,8 @@ func (dfa *DeterministicFiniteAutomata) Name() string {
 	return dfa.name
 }
 
-func (dfa *DeterministicFiniteAutomata) Type() string {
-	return TypeDFA
+func (dfa *DeterministicFiniteAutomata) Type() AutomataType {
+	return DFA
 }
 
 func (dfa *DeterministicFiniteAutomata) TransitionGraph() TransitionGraph {
@@ -38,7 +40,18 @@ func (dfa *DeterministicFiniteAutomata) AcceptStates() []State {
 }
 
 func (dfa *DeterministicFiniteAutomata) AcceptString(str string) (bool, error) {
-	return false, nil
+	if !dfa.alphabet.HasAll(str) {
+		return false, fmt.Errorf("some characters in %v are not in the alphabeta", str)
+	}
+	s := dfa.startState
+	for _, c := range str {
+		t, err := dfa.g.GetTransition(s, c);
+		if err != nil {
+			return false, nil
+		}
+		s = t.To().(State)
+	}
+	return s.IsAccept(), nil
 }
 
 

@@ -1,13 +1,21 @@
 package watermill
 
-import "gonum.org/v1/gonum/graph"
+import "fmt"
 
 type Automata interface {
 	Name() string
-	Type() string
+	Type() AutomataType
 	TransitionGraph() TransitionGraph
 	Alphabet() Alphabet
 }
+
+type AutomataType uint
+
+const (
+	DFA AutomataType = iota
+	NFA
+	EpsilonNFA
+)
 
 type State struct {
 	id int64
@@ -22,45 +30,29 @@ func (s State) IsAccept() bool {
 	return s.accept
 }
 
-type Transition struct {
-	from State
-	to State
-	label byte
+func (s State) String() string {
+	return fmt.Sprintf("State {id: %v, accept: %v}", s.id, s.accept)
 }
 
-func (t Transition) From() graph.Node {
-	return t.from
+type Alphabet map[rune]bool
+
+func (ab Alphabet) Has(c rune) bool {
+	return ab[c]
 }
 
-func (t Transition) To() graph.Node {
-	return t.to
-}
-
-func (t Transition) ReversedEdge() graph.Edge {
-	return Transition{
-		from: t.to,
-		to: t.from,
-		label: t.label,
+func (ab Alphabet) HasAll(s string) bool {
+	for _, c := range s {
+		if !ab.Has(c) {
+			return false
+		}
 	}
+	return true
 }
 
-func (t *Transition) Label() byte {
-	return t.label
-}
-
-
-type TransitionGraph struct {
-	states []State
-	transitions map[State]Transition
-}
-
-func (g *TransitionGraph) States() []State {
-	return g.states
-}
-
-
-type Alphabet map[byte]bool
-
-func (alphabet Alphabet) Has(c byte) bool {
-	return alphabet[c]
+func (ab Alphabet) String() string {
+	s := ""
+	for c := range ab {
+		s += string(c)
+	}
+	return fmt.Sprintf("Alphabet {%v}", s)
 }

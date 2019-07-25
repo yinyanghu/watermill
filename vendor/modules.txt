@@ -1,2 +1,3 @@
 # gonum.org/v1/gonum v0.0.0-20190720215703-07619a1c75ec
 gonum.org/v1/gonum/graph
+gonum.org/v1/gonum/graph/iterator

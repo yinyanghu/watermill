@@ -7,6 +7,12 @@ import (
 	"gonum.org/v1/gonum/graph/iterator"
 )
 
+type TransitionDescription struct {
+	From int64
+	To int64
+	Label rune
+}
+
 type Transition struct {
 	from State
 	to State
@@ -35,10 +41,11 @@ func (t *Transition) Label() rune {
 
 type TransitionGraph struct {
 	states map[int64]State
-	transitions map[State]map[rune]Transition
-	edges map[int64]map[int64]Transition
-	revEdges map[int64]map[int64]Transition
+	transitions map[int64]map[rune]*Transition
+	edges map[int64]map[int64]*Transition
+	revEdges map[int64]map[int64]*Transition
 }
+
 
 func (g *TransitionGraph) Node(id int64) graph.Node {
 	return g.states[id]
@@ -115,10 +122,46 @@ func (g *TransitionGraph) States() []State {
 }
 
 func (g *TransitionGraph) GetTransition(s State, c rune) (*Transition, error) {
-	t, ok := g.transitions[s][c]
+	t, ok := g.transitions[s.ID()][c]
 	if !ok {
 		return nil, fmt.Errorf("DFA does not have a transition from state %v with label %v", s, c)
 	}
-	return &t, nil
+	return t, nil
+}
+
+func NewTransitionGraph(states []State, transDesc []TransitionDescription) (*TransitionGraph, error) {
+	statesMap := map[int64]State{}
+	for _, s := range states {
+		if ss, ok := statesMap[s.ID()]; ok {
+			return nil, fmt.Errorf("multiple states with the same ID: %v, %v, id: %v", s, ss, s.ID())
+		}
+		statesMap[s.ID()] = s
+	}
+
+	transMap := map[int64]map[rune]*Transition{}
+	for _, td := range transDesc {
+		if _, ok := statesMap[td.From]; !ok {
+			return nil, fmt.Errorf("(from: state %v) in %v does not exist", td.From, td)
+		}
+		if _, ok := statesMap[td.To]; !ok {
+			return nil, fmt.Errorf("(to: state %v) in %v does not exist", td.To, td)
+		}
+		t := Transition{
+			from:  statesMap[td.From],
+			to:    statesMap[td.To],
+			label: td.Label,
+		}
+		if _, ok := transMap[td.From]; !ok {
+			transMap[td.From] = map[rune]*Transition{}
+		}
+		transMap[td.From][td.Label] = &t
+	}
+
+	return &TransitionGraph{
+		states:      statesMap,
+		transitions: transMap,
+		edges:       nil,
+		revEdges:    nil,
+	}, nil
 }
 

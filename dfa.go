@@ -41,29 +41,6 @@ func (dfa *DeterministicFiniteAutomata) AcceptStates() []State {
 	return acceptStates
 }
 
-func NewDFA(name string, states []State, transDesc []TransitionDescription, start int64) (*DeterministicFiniteAutomata, error) {
-	g, err := NewTransitionGraph(states, transDesc)
-	if err != nil {
-		return nil, fmt.Errorf("in NewTransitionGraph(): %v", err)
-	}
-	ab := Alphabet{}
-	for _, td := range transDesc {
-		for _, l := range td.Label {
-			ab[l] = true
-		}
-	}
-	dfa := DeterministicFiniteAutomata{
-		name:       name,
-		g:          g,
-		alphabet:   ab,
-		startState: g.Node(start).(State),
-	}
-	if dfa.Validate() != nil {
-		return nil, fmt.Errorf("DFA %v is not valid: %v", name, err)
-	}
-	return &dfa, nil
-}
-
 func (dfa *DeterministicFiniteAutomata) Validate() error {
 	if !dfa.g.HasState(dfa.startState) {
 		return fmt.Errorf("DFA %v does not have state %v", dfa.name, dfa.startState)
@@ -95,4 +72,27 @@ func (dfa *DeterministicFiniteAutomata) AcceptString(str string) (bool, error) {
 		s = t[0].To().(State)
 	}
 	return s.IsAccept(), nil
+}
+
+func NewDFA(name string, states []State, transDesc []TransitionDescription, start int64) (*DeterministicFiniteAutomata, error) {
+  g, err := NewTransitionGraph(states, transDesc)
+  if err != nil {
+    return nil, fmt.Errorf("in NewTransitionGraph(): %v", err)
+  }
+  ab := Alphabet{}
+  for _, td := range transDesc {
+    for _, l := range td.Label {
+      ab[l] = true
+    }
+  }
+  dfa := DeterministicFiniteAutomata{
+    name:       name,
+    g:          g,
+    alphabet:   ab,
+    startState: g.Node(start).(State),
+  }
+  if dfa.Validate() != nil {
+    return nil, fmt.Errorf("DFA %v is not valid: %v", name, err)
+  }
+  return &dfa, nil
 }

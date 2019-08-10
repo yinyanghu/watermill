@@ -5,5 +5,7 @@ type FiniteAutomata interface {
 	StartState() State
 	AcceptStates() []State
 
+	Validate() bool
+
 	AcceptString(str string) (bool, error)
 }

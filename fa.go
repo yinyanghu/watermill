@@ -7,7 +7,3 @@ type FiniteAutomata interface {
 
 	AcceptString(str string) (bool, error)
 }
-
-
-
-

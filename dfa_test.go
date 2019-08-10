@@ -14,12 +14,12 @@ func TestAcceptString(t *testing.T) {
 			{-1, false},
 		},
 		[]TransitionDescription{
-			{0, 0, '0'},
-			{0, 1, '1'},
-			{1, -1, '0'},
-			{1, 1, '1'},
-			{-1, -1, '0'},
-			{-1, -1, '1'},
+			{0, 0, "0"},
+			{0, 1, "1"},
+			{1, -1, "0"},
+			{1, 1, "1"},
+			{-1, -1, "0"},
+			{-1, -1, "1"},
 		},
 		0,
 	)
@@ -27,8 +27,8 @@ func TestAcceptString(t *testing.T) {
 		t.Fatalf("Invalid unit test with error: %v", err)
 	}
 	tests := []struct {
-		dfa *DeterministicFiniteAutomata
-		input string
+		dfa      *DeterministicFiniteAutomata
+		input    string
 		expected bool
 	}{
 		{dfaA, "01", true},

@@ -1,12 +1,14 @@
 package watermill
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type DeterministicFiniteAutomata struct {
-	name         string
-	g            *TransitionGraph
-	alphabet     Alphabet
-	startState   State
+	name       string
+	g          *TransitionGraph
+	alphabet   Alphabet
+	startState State
 }
 
 func (dfa *DeterministicFiniteAutomata) Name() string {
@@ -46,14 +48,38 @@ func NewDFA(name string, states []State, transDesc []TransitionDescription, star
 	}
 	ab := Alphabet{}
 	for _, td := range transDesc {
-		ab[td.Label] = true
+		for _, l := range td.Label {
+			ab[l] = true
+		}
 	}
-	return &DeterministicFiniteAutomata{
+	dfa := DeterministicFiniteAutomata{
 		name:       name,
 		g:          g,
 		alphabet:   ab,
 		startState: g.Node(start).(State),
-	}, nil
+	}
+	if dfa.Validate() != nil {
+		return nil, fmt.Errorf("DFA %v is not valid: %v", name, err)
+	}
+	return &dfa, nil
+}
+
+func (dfa *DeterministicFiniteAutomata) Validate() error {
+	if !dfa.g.HasState(dfa.startState) {
+		return fmt.Errorf("DFA %v does not have state %v", dfa.name, dfa.startState)
+	}
+	for _, s := range dfa.g.States() {
+		for l := range dfa.alphabet {
+			transitions, err := dfa.g.GetTransitions(s, l)
+			if err != nil {
+				return fmt.Errorf("could not find transition (state %v, label %v) in DFA %v", s, l, dfa.name)
+			}
+			if len(transitions) != 1 {
+				return fmt.Errorf("found multiple transitions (state %v, label %v) --> %v in DFA %v", s, l, transitions, dfa.name)
+			}
+		}
+	}
+	return nil
 }
 
 func (dfa *DeterministicFiniteAutomata) AcceptString(str string) (bool, error) {
@@ -61,13 +87,12 @@ func (dfa *DeterministicFiniteAutomata) AcceptString(str string) (bool, error) {
 		return false, fmt.Errorf("some characters in %v are not in the alphabeta", str)
 	}
 	s := dfa.startState
-	for _, c := range str {
-		t, err := dfa.g.GetTransition(s, c);
+	for _, l := range str {
+		t, err := dfa.g.GetTransitions(s, l)
 		if err != nil {
 			return false, nil
 		}
-		s = t.To().(State)
+		s = t[0].To().(State)
 	}
 	return s.IsAccept(), nil
 }
-

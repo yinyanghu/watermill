@@ -2,21 +2,22 @@ package watermill
 
 import (
 	"fmt"
+	"strings"
 
 	"gonum.org/v1/gonum/graph"
 	"gonum.org/v1/gonum/graph/iterator"
 )
 
 type TransitionDescription struct {
-	From int64
-	To int64
-	Label rune
+	From  int64
+	To    int64
+	Label string
 }
 
 type Transition struct {
-	from State
-	to State
-	label rune
+	from  State
+	to    State
+	label string
 }
 
 func (t Transition) From() graph.Node {
@@ -29,23 +30,26 @@ func (t Transition) To() graph.Node {
 
 func (t Transition) ReversedEdge() graph.Edge {
 	return Transition{
-		from: t.to,
-		to: t.from,
+		from:  t.to,
+		to:    t.from,
 		label: t.label,
 	}
 }
 
-func (t *Transition) Label() rune {
+func (t *Transition) AllLabel() string {
 	return t.label
 }
 
-type TransitionGraph struct {
-	states map[int64]State
-	transitions map[int64]map[rune]*Transition
-	edges map[int64]map[int64]*Transition
-	revEdges map[int64]map[int64]*Transition
+func (t *Transition) HasLabel(l rune) bool {
+	return strings.ContainsRune(t.label, l)
 }
 
+type TransitionGraph struct {
+	states      map[int64]State
+	transitions map[int64]map[rune][]*Transition
+	edges       map[int64]map[int64]*Transition
+	revEdges    map[int64]map[int64]*Transition
+}
 
 func (g *TransitionGraph) Node(id int64) graph.Node {
 	return g.states[id]
@@ -63,7 +67,7 @@ func (g *TransitionGraph) Nodes() graph.Nodes {
 }
 
 func (g *TransitionGraph) From(id int64) graph.Nodes {
-	es, ok := g.edges[id];
+	es, ok := g.edges[id]
 	if !ok {
 		return graph.Empty
 	}
@@ -121,10 +125,15 @@ func (g *TransitionGraph) States() []State {
 	return states
 }
 
-func (g *TransitionGraph) GetTransition(s State, c rune) (*Transition, error) {
-	t, ok := g.transitions[s.ID()][c]
+func (g *TransitionGraph) HasState(s State) bool {
+	_, ok := g.states[s.ID()]
+	return ok
+}
+
+func (g *TransitionGraph) GetTransitions(s State, l rune) ([]*Transition, error) {
+	t, ok := g.transitions[s.ID()][l]
 	if !ok {
-		return nil, fmt.Errorf("DFA does not have a transition from state %v with label %v", s, c)
+		return nil, fmt.Errorf("DFA does not have a transition from state %v with label %v", s, l)
 	}
 	return t, nil
 }
@@ -138,7 +147,7 @@ func NewTransitionGraph(states []State, transDesc []TransitionDescription) (*Tra
 		statesMap[s.ID()] = s
 	}
 
-	transMap := map[int64]map[rune]*Transition{}
+	transMap := map[int64]map[rune][]*Transition{}
 	for _, td := range transDesc {
 		if _, ok := statesMap[td.From]; !ok {
 			return nil, fmt.Errorf("(from: state %v) in %v does not exist", td.From, td)
@@ -152,9 +161,14 @@ func NewTransitionGraph(states []State, transDesc []TransitionDescription) (*Tra
 			label: td.Label,
 		}
 		if _, ok := transMap[td.From]; !ok {
-			transMap[td.From] = map[rune]*Transition{}
+			transMap[td.From] = map[rune][]*Transition{}
 		}
-		transMap[td.From][td.Label] = &t
+		for _, l := range td.Label {
+			if _, ok := transMap[td.From][l]; !ok {
+				transMap[td.From][l] = []*Transition{}
+			}
+			transMap[td.From][l] = append(transMap[td.From][l], &t)
+		}
 	}
 
 	return &TransitionGraph{
@@ -164,4 +178,3 @@ func NewTransitionGraph(states []State, transDesc []TransitionDescription) (*Tra
 		revEdges:    nil,
 	}, nil
 }
-
